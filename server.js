@@ -37,9 +37,16 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // Fallback for clients without /api prefix
+
 app.use('/api/videos', videoRoutes);
+app.use('/videos', videoRoutes); // Fallback
+
 app.use('/api/videos/:videoId/comments', commentRoutes);
+app.use('/videos/:videoId/comments', commentRoutes); // Fallback
+
 app.use('/api/comments', commentRoutes);
+app.use('/comments', commentRoutes); // Fallback
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -48,6 +55,7 @@ app.get('/api/health', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
+  console.log(`Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ message: 'Route not found' });
 });
 

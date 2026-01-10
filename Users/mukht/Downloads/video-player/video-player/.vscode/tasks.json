@@ -1,0 +1,204 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Fix Git Backend",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/fix_git_v2.js"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Fix Git Backend V3",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/fix_git_v3.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Fix Git Backend V4",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/fix_git_v4.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Cleanup Script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"const fs = require('fs'); const path = require('path'); try { fs.unlinkSync(path.join('backend', 'fix_git_v4.cjs')); } catch(e) { console.error(e) }"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Backend Fix",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/push_fix.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Cleanup Push Script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"const fs = require('fs'); const path = require('path'); try { fs.unlinkSync(path.join('backend', 'push_fix.cjs')); } catch(e) { console.error(e) }"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Git Cleanup",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"backend/git_clean.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Remove Clean Script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"const fs = require('fs'); const path = require('path'); try { fs.unlinkSync(path.join('backend', 'git_clean.cjs')); } catch(e) {}"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Frontend",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_frontend.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Fix Frontend Git",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"fix_frontend_git.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Final Cleanup",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"cleanup_scripts.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Player Fix",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_player_fix.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Cleanup Player Push Script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"const fs = require('fs'); const path = require('path'); try { fs.unlinkSync(path.join('push_player_fix.cjs')); } catch(e) {}"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Feature",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_feature.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Feature V2",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_feature_v2.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}

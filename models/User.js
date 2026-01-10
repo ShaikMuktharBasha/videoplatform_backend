@@ -24,7 +24,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Name is required'],
     trim: true
-  }
+  },
+  savedVideos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Video'
+  }]
 }, {
   timestamps: true
 });

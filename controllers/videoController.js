@@ -1,4 +1,5 @@
 import Video from '../models/Video.js';
+import User from '../models/User.js';
 import { processVideo } from '../services/videoProcessor.js';
 import path from 'path';
 import fs from 'fs';
@@ -123,7 +124,16 @@ export const getVideoById = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
     
-    res.json({ video });
+    // Add isSaved status
+    let videoData = video.toObject();
+    if (req.user) {
+        const currentUser = await User.findById(req.user._id);
+        if (currentUser) {
+            videoData.isSaved = currentUser.savedVideos.includes(video._id);
+        }
+    }
+
+    res.json({ video: videoData });
   } catch (error) {
     console.error('Get video error:', error);
     res.status(500).json({ message: 'Server error fetching video', error: error.message });
@@ -215,5 +225,45 @@ export const deleteVideo = async (req, res) => {
   } catch (error) {
     console.error('Delete video error:', error);
     res.status(500).json({ message: 'Server error deleting video', error: error.message });
+  }
+};
+
+// Get liked videos
+export const getLikedVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ likes: req.user._id })
+      .populate('user', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ videos });
+  } catch (error) {
+    console.error('Get liked videos error:', error);
+    res.status(500).json({ message: 'Server error fetching liked videos' });
+  }
+};
+
+// Get disliked videos
+export const getDislikedVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ dislikes: req.user._id })
+      .populate('user', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ videos });
+  } catch (error) {
+    console.error('Get disliked videos error:', error);
+    res.status(500).json({ message: 'Server error fetching disliked videos' });
+  }
+};
+
+// Get saved videos
+export const getSavedVideos = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const videos = await Video.find({ _id: { $in: user.savedVideos } })
+      .populate('user', 'name')
+      .sort({ createdAt: -1 });
+    res.json({ videos });
+  } catch (error) {
+    console.error('Get saved videos error:', error);
+    res.status(500).json({ message: 'Server error fetching saved videos' });
   }
 };

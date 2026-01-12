@@ -32,8 +32,10 @@ export const processVideo = async (videoId) => {
     video.processingStatus = 'completed';
     video.processingProgress = 100;
     
-    // Simulate getting video duration (random between 30-600 seconds)
-    video.duration = Math.floor(Math.random() * 570) + 30;
+    // Use existing duration if available (from frontend extraction), otherwise simulate
+    if (!video.duration || video.duration === 0) {
+      video.duration = Math.floor(Math.random() * 570) + 30;
+    }
     
     await video.save();
     

@@ -15,7 +15,7 @@ export const uploadVideo = async (req, res) => {
       return res.status(400).json({ message: 'No video file uploaded' });
     }
     
-    const { title, description } = req.body;
+    const { title, description, duration } = req.body;
     
     if (!title) {
       // Delete uploaded file if validation fails
@@ -31,6 +31,7 @@ export const uploadVideo = async (req, res) => {
       filepath: req.file.path,
       filesize: req.file.size,
       mimetype: req.file.mimetype,
+      duration: duration ? parseInt(duration) : 0, // Store duration from client if available
       user: req.user._id,
       processingStatus: 'pending',
       sensitivityStatus: 'pending'

@@ -26,9 +26,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+import os from 'os';
+
 // Serve static files (uploaded videos)
-// Note: In Vercel this will not persist files, but we serve from /tmp to allow immediate playback if instance persists
-const uploadsPath = process.env.NODE_ENV === 'production' ? '/tmp' : path.join(__dirname, 'uploads');
+// Note: In Vercel this will not persist files, but we serve from os.tmpdir() to allow immediate playback
+const uploadsPath = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') 
+  ? os.tmpdir() 
+  : path.join(__dirname, 'uploads');
+  
 app.use('/uploads', express.static(uploadsPath));
 
 // Root route

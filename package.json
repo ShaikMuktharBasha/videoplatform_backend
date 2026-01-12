@@ -1,6 +1,6 @@
 {
   "name": "video-platform-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend for video platform with content moderation",
   "main": "server.js",
   "type": "module",

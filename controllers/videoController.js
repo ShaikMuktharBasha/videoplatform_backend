@@ -18,8 +18,15 @@ export const uploadVideo = async (req, res) => {
     const { title, description, duration } = req.body;
     
     if (!title) {
-      // Delete uploaded file if validation fails
-      fs.unlinkSync(req.file.path);
+      // If validation fails, we can't easily delete from Cloudinary here without importing the uploader
+      // But we must NOT allow fs.unlinkSync to crash the server if path is a URL
+      try {
+        if (!req.file.path.startsWith('http')) {
+           fs.unlinkSync(req.file.path);
+        }
+      } catch (err) {
+        console.error('Error deleting file cleanup:', err);
+      }
       return res.status(400).json({ message: 'Title is required' });
     }
     

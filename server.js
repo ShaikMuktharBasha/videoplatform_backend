@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import videoRoutes from './routes/videos.js';
+import photoRoutes from './routes/photos.js';
 import commentRoutes from './routes/comments.js';
 
 // Load environment variables
@@ -36,6 +37,11 @@ const uploadsPath = (process.env.NODE_ENV === 'production' || process.env.VERCEL
   
 app.use('/uploads', express.static(uploadsPath));
 
+// Handle missing files in uploads directory
+app.use('/uploads/*', (req, res) => {
+  res.status(404).json({ message: 'File not found' });
+});
+
 // Root route
 app.get('/', (req, res) => {
   res.json({ message: 'Video Platform API is running' });
@@ -47,6 +53,9 @@ app.use('/auth', authRoutes); // Fallback for clients without /api prefix
 
 app.use('/api/videos', videoRoutes);
 app.use('/videos', videoRoutes); // Fallback
+
+app.use('/api/photos', photoRoutes);
+app.use('/photos', photoRoutes); // Fallback
 
 app.use('/api/videos/:videoId/comments', commentRoutes);
 app.use('/videos/:videoId/comments', commentRoutes); // Fallback

@@ -28,7 +28,11 @@ const userSchema = new mongoose.Schema({
   savedVideos: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Video'
-  }]
+  }],
+  savedPhotos: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Photo'
+  }],
 }, {
   timestamps: true
 });

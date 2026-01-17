@@ -85,8 +85,7 @@ export const getUserVideos = async (req, res) => {
     }
     
     const videos = await Video.find(query)
-      .sort({ createdAt: -1 })
-      .select('-filepath'); // Don't expose file path
+      .sort({ createdAt: -1 });
     
     res.json({
       count: videos.length,
@@ -103,7 +102,6 @@ export const getAllPublicVideos = async (req, res) => {
   try {
     const videos = await Video.find({ sensitivityStatus: 'safe' })
       .sort({ createdAt: -1 })
-      .select('-filepath')
       .populate('user', 'name'); // Populate uploader name
     
     res.json({

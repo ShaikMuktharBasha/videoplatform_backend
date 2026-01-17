@@ -19,4 +19,13 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export { cloudinary, storage };
+const photoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'video-platform/photos',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+  },
+});
+
+export { cloudinary, storage, photoStorage };

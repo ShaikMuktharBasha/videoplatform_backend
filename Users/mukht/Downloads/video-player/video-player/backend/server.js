@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import videoRoutes from './routes/videos.js';
+import photoRoutes from './routes/photos.js';
 import commentRoutes from './routes/comments.js';
 
 // Load environment variables
@@ -21,15 +22,25 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: process.env.FRONTEND_URL || '*',
-    credentials: true
+    credentials: false
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+import os from 'os';
+
 // Serve static files (uploaded videos)
-// Note: In Vercel this will not persist files, but we serve from /tmp to allow immediate playback if instance persists
-const uploadsPath = process.env.NODE_ENV === 'production' ? '/tmp' : path.join(__dirname, 'uploads');
+// Note: In Vercel this will not persist files, but we serve from os.tmpdir() to allow immediate playback
+const uploadsPath = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') 
+  ? os.tmpdir() 
+  : path.join(__dirname, 'uploads');
+  
 app.use('/uploads', express.static(uploadsPath));
+
+// Handle missing files in uploads directory
+app.use('/uploads/*', (req, res) => {
+  res.status(404).json({ message: 'File not found' });
+});
 
 // Root route
 app.get('/', (req, res) => {
@@ -42,6 +53,9 @@ app.use('/auth', authRoutes); // Fallback for clients without /api prefix
 
 app.use('/api/videos', videoRoutes);
 app.use('/videos', videoRoutes); // Fallback
+
+app.use('/api/photos', photoRoutes);
+app.use('/photos', photoRoutes); // Fallback
 
 app.use('/api/videos/:videoId/comments', commentRoutes);
 app.use('/videos/:videoId/comments', commentRoutes); // Fallback

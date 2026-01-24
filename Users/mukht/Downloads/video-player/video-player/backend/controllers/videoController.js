@@ -18,8 +18,15 @@ export const uploadVideo = async (req, res) => {
     const { title, description, duration } = req.body;
     
     if (!title) {
-      // Delete uploaded file if validation fails
-      fs.unlinkSync(req.file.path);
+      // If validation fails, we can't easily delete from Cloudinary here without importing the uploader
+      // But we must NOT allow fs.unlinkSync to crash the server if path is a URL
+      try {
+        if (!req.file.path.startsWith('http')) {
+           fs.unlinkSync(req.file.path);
+        }
+      } catch (err) {
+        console.error('Error deleting file cleanup:', err);
+      }
       return res.status(400).json({ message: 'Title is required' });
     }
     
@@ -78,8 +85,7 @@ export const getUserVideos = async (req, res) => {
     }
     
     const videos = await Video.find(query)
-      .sort({ createdAt: -1 })
-      .select('-filepath'); // Don't expose file path
+      .sort({ createdAt: -1 });
     
     res.json({
       count: videos.length,
@@ -91,13 +97,17 @@ export const getUserVideos = async (req, res) => {
   }
 };
 
-// Get all public videos (safe status)
+// Get all public videos (safe status with public content rating)
 export const getAllPublicVideos = async (req, res) => {
   try {
-    const videos = await Video.find({ sensitivityStatus: 'safe' })
+    // Only show videos that are safe AND have public content rating
+    const videos = await Video.find({ 
+      contentRating: 'public',
+      sensitivityStatus: 'safe',
+      processingStatus: 'completed'
+    })
       .sort({ createdAt: -1 })
-      .select('-filepath')
-      .populate('user', 'name'); // Populate uploader name
+      .populate('user', 'name');
     
     res.json({
       count: videos.length,
@@ -106,6 +116,27 @@ export const getAllPublicVideos = async (req, res) => {
   } catch (error) {
     console.error('Get public videos error:', error);
     res.status(500).json({ message: 'Server error fetching public videos', error: error.message });
+  }
+};
+
+// Get all 18+ videos (for adult users only - requires age verification)
+export const getAdultVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ 
+      contentRating: '18+',
+      processingStatus: 'completed'
+    })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name');
+    
+    res.json({
+      count: videos.length,
+      videos,
+      warning: 'This content is rated 18+ and may contain nudity, horror, violence, or other mature content.'
+    });
+  } catch (error) {
+    console.error('Get adult videos error:', error);
+    res.status(500).json({ message: 'Server error fetching adult videos', error: error.message });
   }
 };
 
@@ -118,21 +149,28 @@ export const getVideoById = async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
     
-    // Allow access if user owns video OR video is safe
+    // Allow access if user owns video OR video is public
     const isOwner = video.user._id.toString() === req.user._id.toString();
-    const isSafe = video.sensitivityStatus === 'safe';
+    const isPublic = video.contentRating === 'public' && video.sensitivityStatus === 'safe';
+    const isAdult = video.contentRating === '18+';
 
-    if (!isOwner && !isSafe) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Anyone can view public content, only owners can view restricted content
+    if (!isOwner && !isPublic && !isAdult) {
+      return res.status(403).json({ message: 'Access denied - Content is restricted' });
     }
     
-    // Add isSaved status
+    // Add isSaved status and content warning
     let videoData = video.toObject();
     if (req.user) {
         const currentUser = await User.findById(req.user._id);
         if (currentUser) {
             videoData.isSaved = currentUser.savedVideos.includes(video._id);
         }
+    }
+    
+    // Add content warning for 18+ content
+    if (isAdult) {
+      videoData.contentWarning = 'This content is rated 18+ and may contain mature content including nudity, horror, violence, or other sensitive material.';
     }
 
     res.json({ video: videoData });

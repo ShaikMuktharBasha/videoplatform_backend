@@ -94,10 +94,15 @@ export const getUserPhotos = async (req, res) => {
   }
 };
 
-// Get all public photos
+// Get all public photos (safe status with public content rating)
 export const getAllPublicPhotos = async (req, res) => {
   try {
-    const photos = await Photo.find({ sensitivityStatus: 'safe' })
+    // Only show photos that are safe AND have public content rating
+    const photos = await Photo.find({ 
+      contentRating: 'public',
+      sensitivityStatus: 'safe',
+      processingStatus: 'completed'
+    })
       .sort({ createdAt: -1 })
       .populate('user', 'name');
     
@@ -111,6 +116,27 @@ export const getAllPublicPhotos = async (req, res) => {
   }
 };
 
+// Get all 18+ photos (for adult users only - requires age verification)
+export const getAdultPhotos = async (req, res) => {
+  try {
+    const photos = await Photo.find({ 
+      contentRating: '18+',
+      processingStatus: 'completed'
+    })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name');
+    
+    res.json({
+      count: photos.length,
+      photos,
+      warning: 'This content is rated 18+ and may contain nudity, horror, violence, or other mature content.'
+    });
+  } catch (error) {
+    console.error('Get adult photos error:', error);
+    res.status(500).json({ message: 'Server error fetching adult photos', error: error.message });
+  }
+};
+
 // Get single photo details
 export const getPhotoById = async (req, res) => {
   try {
@@ -120,21 +146,28 @@ export const getPhotoById = async (req, res) => {
       return res.status(404).json({ message: 'Photo not found' });
     }
     
-    // Allow access if user owns photo OR photo is safe
+    // Allow access if user owns photo OR photo is public
     const isOwner = photo.user._id.toString() === req.user._id.toString();
-    const isSafe = photo.sensitivityStatus === 'safe';
+    const isPublic = photo.contentRating === 'public' && photo.sensitivityStatus === 'safe';
+    const isAdult = photo.contentRating === '18+';
 
-    if (!isOwner && !isSafe) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Anyone can view public content, only owners can view restricted content
+    if (!isOwner && !isPublic && !isAdult) {
+      return res.status(403).json({ message: 'Access denied - Content is restricted' });
     }
     
-    // Add isSaved status
+    // Add isSaved status and content warning
     let photoData = photo.toObject();
     if (req.user) {
         const currentUser = await User.findById(req.user._id);
         if (currentUser) {
             photoData.isSaved = currentUser.savedPhotos.includes(photo._id);
         }
+    }
+    
+    // Add content warning for 18+ content
+    if (isAdult) {
+      photoData.contentWarning = 'This content is rated 18+ and may contain mature content including nudity, horror, violence, or other sensitive material.';
     }
 
     res.json({ photo: photoData });

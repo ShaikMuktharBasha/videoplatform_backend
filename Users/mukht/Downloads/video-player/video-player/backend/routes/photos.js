@@ -5,6 +5,7 @@ import {
   uploadPhotoController,
   getUserPhotos,
   getAllPublicPhotos,
+  getAdultPhotos,
   getPhotoById,
   deletePhoto,
   getLikedPhotos,
@@ -29,8 +30,11 @@ router.post('/upload', requireRole('Editor', 'Admin'), uploadPhoto.single('photo
 // GET /api/photos - Get all photos for current user
 router.get('/', getUserPhotos);
 
-// GET /api/photos/public - Get all public photos
+// GET /api/photos/public - Get all public photos (safe for all ages)
 router.get('/public', getAllPublicPhotos);
+
+// GET /api/photos/adult - Get all 18+ photos (mature content)
+router.get('/adult', getAdultPhotos);
 
 // GET /api/photos/liked - Get liked photos
 router.get('/liked', getLikedPhotos);

@@ -5,6 +5,7 @@ import {
   uploadVideo,
   getUserVideos,
   getAllPublicVideos,
+  getAdultVideos,
   getVideoById,
   streamVideo,
   deleteVideo,
@@ -30,8 +31,11 @@ router.post('/upload', requireRole('Editor', 'Admin'), upload.single('video'), u
 // GET /api/videos - Get all videos for current user
 router.get('/', getUserVideos);
 
-// GET /api/videos/public - Get all public videos
+// GET /api/videos/public - Get all public videos (safe for all ages)
 router.get('/public', getAllPublicVideos);
+
+// GET /api/videos/adult - Get all 18+ videos (mature content)
+router.get('/adult', getAdultVideos);
 
 // GET /api/videos/liked - Get liked videos
 router.get('/liked', getLikedVideos);

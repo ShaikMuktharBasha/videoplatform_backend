@@ -14,9 +14,22 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'video-platform',
-    resource_type: 'video', // Explicitly tell Cloudinary this is video
+    resource_type: 'video',
     allowed_formats: ['mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm'],
+    // Enable AI moderation for content analysis
+    moderation: 'aws_rek',
   },
 });
 
-export { cloudinary, storage };
+const photoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'video-platform/photos',
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    // Enable AI moderation for content analysis
+    moderation: 'aws_rek',
+  },
+});
+
+export { cloudinary, storage, photoStorage };

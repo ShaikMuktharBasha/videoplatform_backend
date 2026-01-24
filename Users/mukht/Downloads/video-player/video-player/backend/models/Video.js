@@ -41,10 +41,45 @@ const videoSchema = new mongoose.Schema({
     enum: ['pending', 'processing', 'completed', 'failed'],
     default: 'pending'
   },
+  // Enhanced content rating system
+  contentRating: {
+    type: String,
+    enum: ['public', '18+', 'restricted', 'pending'],
+    default: 'pending'
+  },
   sensitivityStatus: {
     type: String,
-    enum: ['pending', 'safe', 'flagged'],
+    enum: ['pending', 'safe', 'flagged', 'adult', 'horror', 'violence'],
     default: 'pending'
+  },
+  // Detailed moderation analysis results
+  moderationAnalysis: {
+    nudity: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    violence: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    horror: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    gore: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    drugs: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    weapons: {
+      detected: { type: Boolean, default: false },
+      confidence: { type: Number, default: 0 }
+    },
+    analyzedAt: { type: Date },
+    analysisMethod: { type: String, default: 'cloudinary' }
   },
   processingProgress: {
     type: Number,
@@ -71,6 +106,7 @@ const videoSchema = new mongoose.Schema({
 // Index for faster queries
 videoSchema.index({ user: 1, createdAt: -1 });
 videoSchema.index({ sensitivityStatus: 1 });
+videoSchema.index({ contentRating: 1 });
 
 const Video = mongoose.model('Video', videoSchema);
 

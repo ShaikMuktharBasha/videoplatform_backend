@@ -1,6 +1,7 @@
 import Video from '../models/Video.js';
 import User from '../models/User.js';
 import { processVideo } from '../services/videoProcessor.js';
+import { generateSignedUpload } from '../config/cloudinary.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,7 +9,73 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Upload video
+// Get upload signature for direct Cloudinary upload (bypasses Vercel's 4.5MB limit)
+export const getUploadSignature = async (req, res) => {
+  try {
+    const signatureData = generateSignedUpload('video', 'video-platform');
+    res.json(signatureData);
+  } catch (error) {
+    console.error('Signature generation error:', error);
+    res.status(500).json({ message: 'Error generating upload signature', error: error.message });
+  }
+};
+
+// Save video that was uploaded directly to Cloudinary
+export const saveCloudinaryVideo = async (req, res) => {
+  try {
+    const { 
+      title, 
+      description, 
+      cloudinaryUrl, 
+      publicId, 
+      filesize, 
+      duration,
+      format 
+    } = req.body;
+    
+    if (!title || !cloudinaryUrl || !publicId) {
+      return res.status(400).json({ 
+        message: 'Title, cloudinaryUrl, and publicId are required' 
+      });
+    }
+    
+    // Create video record from Cloudinary upload
+    const video = await Video.create({
+      title,
+      description: description || '',
+      filename: publicId,
+      filepath: cloudinaryUrl,
+      filesize: filesize || 0,
+      mimetype: format ? `video/${format}` : 'video/mp4',
+      duration: duration ? parseInt(duration) : 0,
+      user: req.user._id,
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
+    });
+    
+    // Start content moderation analysis in background
+    processVideo(video._id);
+    
+    res.status(201).json({
+      message: 'Video saved successfully',
+      video: {
+        id: video._id,
+        title: video.title,
+        description: video.description,
+        filename: video.filename,
+        filesize: video.filesize,
+        processingStatus: video.processingStatus,
+        sensitivityStatus: video.sensitivityStatus
+      }
+    });
+  } catch (error) {
+    console.error('Save Cloudinary video error:', error);
+    res.status(500).json({ message: 'Error saving video', error: error.message });
+  }
+};
+
+// Upload video (fallback for small files - Vercel has 4.5MB limit)
 export const uploadVideo = async (req, res) => {
   try {
     if (!req.file) {
@@ -41,11 +108,12 @@ export const uploadVideo = async (req, res) => {
       mimetype: req.file.mimetype,
       duration: duration ? parseInt(duration) : 0, 
       user: req.user._id,
-      processingStatus: 'completed', // Cloudinary handles processing instantly for basic playback
-      sensitivityStatus: 'pending'   // We can keep this for our own moderation logic
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
     });
     
-    // Start local sensitivity analysis (simulated)
+    // Start content moderation analysis in background
     processVideo(video._id);
 
     res.status(201).json({
@@ -97,12 +165,17 @@ export const getUserVideos = async (req, res) => {
   }
 };
 
-// Get all public videos (safe status)
+// Get all public videos (safe status with public content rating)
 export const getAllPublicVideos = async (req, res) => {
   try {
-    const videos = await Video.find({ sensitivityStatus: 'safe' })
+    // Only show videos that are safe AND have public content rating
+    const videos = await Video.find({ 
+      contentRating: 'public',
+      sensitivityStatus: 'safe',
+      processingStatus: 'completed'
+    })
       .sort({ createdAt: -1 })
-      .populate('user', 'name'); // Populate uploader name
+      .populate('user', 'name');
     
     res.json({
       count: videos.length,
@@ -111,6 +184,27 @@ export const getAllPublicVideos = async (req, res) => {
   } catch (error) {
     console.error('Get public videos error:', error);
     res.status(500).json({ message: 'Server error fetching public videos', error: error.message });
+  }
+};
+
+// Get all 18+ videos (for adult users only - requires age verification)
+export const getAdultVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ 
+      contentRating: '18+',
+      processingStatus: 'completed'
+    })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name');
+    
+    res.json({
+      count: videos.length,
+      videos,
+      warning: 'This content is rated 18+ and may contain nudity, horror, violence, or other mature content.'
+    });
+  } catch (error) {
+    console.error('Get adult videos error:', error);
+    res.status(500).json({ message: 'Server error fetching adult videos', error: error.message });
   }
 };
 
@@ -123,21 +217,28 @@ export const getVideoById = async (req, res) => {
       return res.status(404).json({ message: 'Video not found' });
     }
     
-    // Allow access if user owns video OR video is safe
+    // Allow access if user owns video OR video is public
     const isOwner = video.user._id.toString() === req.user._id.toString();
-    const isSafe = video.sensitivityStatus === 'safe';
+    const isPublic = video.contentRating === 'public' && video.sensitivityStatus === 'safe';
+    const isAdult = video.contentRating === '18+';
 
-    if (!isOwner && !isSafe) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Anyone can view public content, only owners can view restricted content
+    if (!isOwner && !isPublic && !isAdult) {
+      return res.status(403).json({ message: 'Access denied - Content is restricted' });
     }
     
-    // Add isSaved status
+    // Add isSaved status and content warning
     let videoData = video.toObject();
     if (req.user) {
         const currentUser = await User.findById(req.user._id);
         if (currentUser) {
             videoData.isSaved = currentUser.savedVideos.includes(video._id);
         }
+    }
+    
+    // Add content warning for 18+ content
+    if (isAdult) {
+      videoData.contentWarning = 'This content is rated 18+ and may contain mature content including nudity, horror, violence, or other sensitive material.';
     }
 
     res.json({ video: videoData });

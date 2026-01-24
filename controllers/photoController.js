@@ -1,6 +1,7 @@
 import Photo from '../models/Photo.js';
 import User from '../models/User.js';
 import { processPhoto } from '../services/photoProcessor.js';
+import { generateSignedUpload } from '../config/cloudinary.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,7 +9,71 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Upload photo
+// Get upload signature for direct Cloudinary upload (bypasses Vercel's 4.5MB limit)
+export const getPhotoUploadSignature = async (req, res) => {
+  try {
+    const signatureData = generateSignedUpload('image', 'video-platform/photos');
+    res.json(signatureData);
+  } catch (error) {
+    console.error('Signature generation error:', error);
+    res.status(500).json({ message: 'Error generating upload signature', error: error.message });
+  }
+};
+
+// Save photo that was uploaded directly to Cloudinary
+export const saveCloudinaryPhoto = async (req, res) => {
+  try {
+    const { 
+      title, 
+      description, 
+      cloudinaryUrl, 
+      publicId, 
+      filesize,
+      format 
+    } = req.body;
+    
+    if (!title || !cloudinaryUrl || !publicId) {
+      return res.status(400).json({ 
+        message: 'Title, cloudinaryUrl, and publicId are required' 
+      });
+    }
+    
+    // Create photo record from Cloudinary upload
+    const photo = await Photo.create({
+      title,
+      description: description || '',
+      filename: publicId,
+      filepath: cloudinaryUrl,
+      filesize: filesize || 0,
+      mimetype: format ? `image/${format}` : 'image/jpeg',
+      user: req.user._id,
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
+    });
+    
+    // Start content moderation analysis in background
+    processPhoto(photo._id);
+    
+    res.status(201).json({
+      message: 'Photo saved successfully',
+      photo: {
+        id: photo._id,
+        title: photo.title,
+        description: photo.description,
+        filename: photo.filename,
+        filesize: photo.filesize,
+        processingStatus: photo.processingStatus,
+        sensitivityStatus: photo.sensitivityStatus
+      }
+    });
+  } catch (error) {
+    console.error('Save Cloudinary photo error:', error);
+    res.status(500).json({ message: 'Error saving photo', error: error.message });
+  }
+};
+
+// Upload photo (fallback for small files - Vercel has 4.5MB limit)
 export const uploadPhotoController = async (req, res) => {
   try {
     if (!req.file) {
@@ -38,11 +103,12 @@ export const uploadPhotoController = async (req, res) => {
       filesize: req.file.size,
       mimetype: req.file.mimetype,
       user: req.user._id,
-      processingStatus: 'completed', // Photos are usually ready immediately
-      sensitivityStatus: 'pending'
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
     });
     
-    // Start local sensitivity analysis
+    // Start content moderation analysis in background
     processPhoto(photo._id);
 
     res.status(201).json({
@@ -94,10 +160,15 @@ export const getUserPhotos = async (req, res) => {
   }
 };
 
-// Get all public photos
+// Get all public photos (safe status with public content rating)
 export const getAllPublicPhotos = async (req, res) => {
   try {
-    const photos = await Photo.find({ sensitivityStatus: 'safe' })
+    // Only show photos that are safe AND have public content rating
+    const photos = await Photo.find({ 
+      contentRating: 'public',
+      sensitivityStatus: 'safe',
+      processingStatus: 'completed'
+    })
       .sort({ createdAt: -1 })
       .populate('user', 'name');
     
@@ -111,6 +182,27 @@ export const getAllPublicPhotos = async (req, res) => {
   }
 };
 
+// Get all 18+ photos (for adult users only - requires age verification)
+export const getAdultPhotos = async (req, res) => {
+  try {
+    const photos = await Photo.find({ 
+      contentRating: '18+',
+      processingStatus: 'completed'
+    })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name');
+    
+    res.json({
+      count: photos.length,
+      photos,
+      warning: 'This content is rated 18+ and may contain nudity, horror, violence, or other mature content.'
+    });
+  } catch (error) {
+    console.error('Get adult photos error:', error);
+    res.status(500).json({ message: 'Server error fetching adult photos', error: error.message });
+  }
+};
+
 // Get single photo details
 export const getPhotoById = async (req, res) => {
   try {
@@ -120,21 +212,28 @@ export const getPhotoById = async (req, res) => {
       return res.status(404).json({ message: 'Photo not found' });
     }
     
-    // Allow access if user owns photo OR photo is safe
+    // Allow access if user owns photo OR photo is public
     const isOwner = photo.user._id.toString() === req.user._id.toString();
-    const isSafe = photo.sensitivityStatus === 'safe';
+    const isPublic = photo.contentRating === 'public' && photo.sensitivityStatus === 'safe';
+    const isAdult = photo.contentRating === '18+';
 
-    if (!isOwner && !isSafe) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Anyone can view public content, only owners can view restricted content
+    if (!isOwner && !isPublic && !isAdult) {
+      return res.status(403).json({ message: 'Access denied - Content is restricted' });
     }
     
-    // Add isSaved status
+    // Add isSaved status and content warning
     let photoData = photo.toObject();
     if (req.user) {
         const currentUser = await User.findById(req.user._id);
         if (currentUser) {
             photoData.isSaved = currentUser.savedPhotos.includes(photo._id);
         }
+    }
+    
+    // Add content warning for 18+ content
+    if (isAdult) {
+      photoData.contentWarning = 'This content is rated 18+ and may contain mature content including nudity, horror, violence, or other sensitive material.';
     }
 
     res.json({ photo: photoData });

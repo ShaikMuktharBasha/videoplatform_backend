@@ -5,11 +5,14 @@ import {
   uploadPhotoController,
   getUserPhotos,
   getAllPublicPhotos,
+  getAdultPhotos,
   getPhotoById,
   deletePhoto,
   getLikedPhotos,
   getDislikedPhotos,
-  getSavedPhotos
+  getSavedPhotos,
+  getPhotoUploadSignature,
+  saveCloudinaryPhoto
 } from '../controllers/photoController.js';
 import { 
   toggleLike, 
@@ -23,14 +26,23 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticate);
 
-// POST /api/photos/upload - Upload photo (Editor or Admin only)
+// GET /api/photos/upload-signature - Get signature for direct Cloudinary upload
+router.get('/upload-signature', requireRole('Editor', 'Admin'), getPhotoUploadSignature);
+
+// POST /api/photos/upload - Upload photo via server (fallback, limited to small files)
 router.post('/upload', requireRole('Editor', 'Admin'), uploadPhoto.single('photo'), uploadPhotoController);
+
+// POST /api/photos/save-cloudinary - Save photo uploaded directly to Cloudinary
+router.post('/save-cloudinary', requireRole('Editor', 'Admin'), saveCloudinaryPhoto);
 
 // GET /api/photos - Get all photos for current user
 router.get('/', getUserPhotos);
 
-// GET /api/photos/public - Get all public photos
+// GET /api/photos/public - Get all public photos (safe for all ages)
 router.get('/public', getAllPublicPhotos);
+
+// GET /api/photos/adult - Get all 18+ photos (mature content)
+router.get('/adult', getAdultPhotos);
 
 // GET /api/photos/liked - Get liked photos
 router.get('/liked', getLikedPhotos);

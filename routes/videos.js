@@ -5,12 +5,15 @@ import {
   uploadVideo,
   getUserVideos,
   getAllPublicVideos,
+  getAdultVideos,
   getVideoById,
   streamVideo,
   deleteVideo,
   getLikedVideos,
   getDislikedVideos,
-  getSavedVideos
+  getSavedVideos,
+  getUploadSignature,
+  saveCloudinaryVideo
 } from '../controllers/videoController.js';
 import { 
   toggleLike, 
@@ -24,14 +27,23 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticate);
 
-// POST /api/videos/upload - Upload video (Editor or Admin only)
+// GET /api/videos/upload-signature - Get signature for direct Cloudinary upload
+router.get('/upload-signature', requireRole('Editor', 'Admin'), getUploadSignature);
+
+// POST /api/videos/upload - Upload video via server (fallback, limited to small files)
 router.post('/upload', requireRole('Editor', 'Admin'), upload.single('video'), uploadVideo);
+
+// POST /api/videos/save-cloudinary - Save video uploaded directly to Cloudinary
+router.post('/save-cloudinary', requireRole('Editor', 'Admin'), saveCloudinaryVideo);
 
 // GET /api/videos - Get all videos for current user
 router.get('/', getUserVideos);
 
-// GET /api/videos/public - Get all public videos
+// GET /api/videos/public - Get all public videos (safe for all ages)
 router.get('/public', getAllPublicVideos);
+
+// GET /api/videos/adult - Get all 18+ videos (mature content)
+router.get('/adult', getAdultVideos);
 
 // GET /api/videos/liked - Get liked videos
 router.get('/liked', getLikedVideos);

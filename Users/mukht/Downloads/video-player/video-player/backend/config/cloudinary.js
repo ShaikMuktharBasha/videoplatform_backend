@@ -16,8 +16,6 @@ const storage = new CloudinaryStorage({
     folder: 'video-platform',
     resource_type: 'video',
     allowed_formats: ['mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm'],
-    // Enable AI moderation for content analysis
-    moderation: 'aws_rek',
   },
 });
 
@@ -27,8 +25,6 @@ const photoStorage = new CloudinaryStorage({
     folder: 'video-platform/photos',
     resource_type: 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    // Enable AI moderation for content analysis
-    moderation: 'aws_rek',
   },
 });
 

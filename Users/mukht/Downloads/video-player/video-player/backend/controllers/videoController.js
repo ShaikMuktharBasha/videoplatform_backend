@@ -41,11 +41,12 @@ export const uploadVideo = async (req, res) => {
       mimetype: req.file.mimetype,
       duration: duration ? parseInt(duration) : 0, 
       user: req.user._id,
-      processingStatus: 'completed', // Cloudinary handles processing instantly for basic playback
-      sensitivityStatus: 'pending'   // We can keep this for our own moderation logic
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
     });
     
-    // Start local sensitivity analysis (simulated)
+    // Start content moderation analysis in background
     processVideo(video._id);
 
     res.status(201).json({

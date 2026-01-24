@@ -38,11 +38,12 @@ export const uploadPhotoController = async (req, res) => {
       filesize: req.file.size,
       mimetype: req.file.mimetype,
       user: req.user._id,
-      processingStatus: 'completed', // Photos are usually ready immediately
-      sensitivityStatus: 'pending'
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
     });
     
-    // Start local sensitivity analysis
+    // Start content moderation analysis in background
     processPhoto(photo._id);
 
     res.status(201).json({

@@ -36,7 +36,6 @@ export const generateSignedUpload = (resourceType = 'video', folder = 'video-pla
   const params = {
     timestamp,
     folder,
-    resource_type: resourceType,
   };
   
   const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);

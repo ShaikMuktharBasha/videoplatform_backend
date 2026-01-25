@@ -33,12 +33,9 @@ const photoStorage = new CloudinaryStorage({
 export const generateSignedUpload = (resourceType = 'video', folder = 'video-platform') => {
   const timestamp = Math.round(new Date().getTime() / 1000);
   
-  const moderation = resourceType === 'video' ? 'google_video_intelligence:explicit_content' : 'aws_rek';
-
   const params = {
     timestamp,
     folder,
-    moderation,
   };
   
   const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
@@ -49,8 +46,7 @@ export const generateSignedUpload = (resourceType = 'video', folder = 'video-pla
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
     folder,
-    resourceType,
-    moderation
+    resourceType
   };
 };
 

@@ -28,4 +28,26 @@ const photoStorage = new CloudinaryStorage({
   },
 });
 
+// Generate signed upload parameters for direct frontend upload
+// This bypasses Vercel's 4.5MB body size limit
+export const generateSignedUpload = (resourceType = 'video', folder = 'video-platform') => {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  
+  const params = {
+    timestamp,
+    folder,
+  };
+  
+  const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
+  
+  return {
+    signature,
+    timestamp,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    folder,
+    resourceType
+  };
+};
+
 export { cloudinary, storage, photoStorage };

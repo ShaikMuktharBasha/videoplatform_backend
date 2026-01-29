@@ -18,15 +18,33 @@ const THRESHOLDS = {
 
 // Keywords that indicate horror/scary content in metadata or analysis
 const HORROR_KEYWORDS = [
-  'horror', 'scary', 'fear', 'terror', 'creepy', 'disturbing',
-  'nightmare', 'demon', 'ghost', 'zombie', 'blood', 'dark',
-  'sinister', 'evil', 'death', 'skull', 'monster', 'mutant'
+  'horror', 'scary', 'scare', 'fear', 'terror', 'creepy', 'disturbing',
+  'nightmare', 'demon', 'ghost', 'zombie', 'blood', 'dark', 'darkness',
+  'sinister', 'evil', 'death', 'skull', 'monster', 'mutant', 'haunted',
+  'possessed', 'paranormal', 'supernatural', 'undead', 'corpse', 'grave',
+  'cemetery', 'coffin', 'witch', 'vampire', 'werewolf', 'devil', 'satan',
+  'curse', 'cursed', 'occult', 'ritual', 'sacrifice', 'macabre', 'gruesome',
+  'eerie', 'ominous', 'dread', 'fright', 'scream', 'shriek', 'poltergeist'
 ];
 
 // Keywords that indicate violence
 const VIOLENCE_KEYWORDS = [
-  'violence', 'fight', 'attack', 'weapon', 'gun', 'knife',
-  'blood', 'injury', 'wound', 'combat', 'war', 'explosion'
+  'violence', 'violent', 'fight', 'fighting', 'attack', 'weapon', 'gun', 'knife',
+  'blood', 'bloody', 'injury', 'wound', 'combat', 'war', 'explosion', 'kill',
+  'murder', 'assault', 'shoot', 'stab', 'punch', 'beat', 'abuse', 'brutal',
+  'aggressive', 'execute', 'slaughter', 'massacre', 'carnage', 'destroy',
+  'injure', 'harm', 'hurt', 'damage', 'smash', 'crush', 'choke', 'strangle',
+  'brawl', 'riot', 'terrorism', 'bomb', 'grenade', 'hostage', 'kidnap', 'torture'
+];
+
+// Keywords that indicate adult/NSFW content
+const ADULT_KEYWORDS = [
+  'nude', 'naked', 'nsfw', 'xxx', 'porn', 'explicit', 'sexy', 'bikini',
+  'underwear', 'lingerie', 'topless', 'strip', 'stripper', 'erotic', 'adult',
+  '18+', 'boobs', 'breast', 'nipple', 'butt', 'ass', 'pussy', 'penis', 'dick',
+  'vagina', 'genital', 'sex', 'sexual', 'orgasm', 'fetish', 'bdsm', 'bondage',
+  'hentai', 'milf', 'slutty', 'slut', 'whore', 'hooker', 'blowjob', 'cumshot',
+  'threesome', 'orgy', 'onlyfans', 'playboy', 'pornhub', 'xvideos', 'brazzers'
 ];
 
 /**
@@ -188,8 +206,7 @@ export const analyzeTextContent = (title, description = '') => {
   }
 
   // Check for adult/NSFW keywords
-  const adultKeywords = ['nsfw', '18+', 'adult', 'explicit', 'xxx', 'nude', 'naked', 'sex'];
-  const adultMatches = adultKeywords.filter(keyword => 
+  const adultMatches = ADULT_KEYWORDS.filter(keyword => 
     combinedText.includes(keyword)
   );
   if (adultMatches.length > 0) {
@@ -297,12 +314,12 @@ const simulateMLAnalysis = (title, description) => {
 
   // Pattern-based detection (simulating ML output)
   const patterns = {
-    nudity: /\b(nude|naked|nsfw|xxx|porn|explicit|sexy|bikini|underwear|lingerie)\b/i,
-    violence: /\b(fight|kill|murder|attack|assault|blood|war|battle|shoot|stab)\b/i,
-    horror: /\b(horror|scary|terror|creepy|ghost|demon|zombie|haunted|nightmare|dead|death)\b/i,
-    gore: /\b(gore|gory|dismember|mutilat|decapitat|torture|brutal)\b/i,
-    drugs: /\b(drug|cocaine|heroin|weed|marijuana|meth|pill|inject)\b/i,
-    weapons: /\b(gun|rifle|pistol|sword|knife|weapon|bomb|explosive)\b/i
+    nudity: /\b(nude|naked|nsfw|xxx|porn|explicit|sexy|bikini|underwear|lingerie|topless|bottomless|strip|stripper|striptease|erotic|erotica|adult|18\+|playboy|onlyfans|boobs|boob|breast|breasts|nipple|nipples|butt|ass|pussy|penis|dick|cock|vagina|genital|genitals|sex|sexual|intercourse|orgasm|masturbat|fetish|bdsm|bondage|hentai|milf|dildo|vibrator|slutty|slut|whore|hooker|prostitut|blowjob|handjob|cumshot|facial|creampie|threesome|orgy|swinger|peep|voyeur|exhibitionist|camgirl|webcam\s*girl|nude\s*model|playmate|centerfold|skin\s*flick|softcore|hardcore|r-rated|x-rated|unrated|uncensored)\b/i,
+    violence: /\b(fight|fights|fighting|kill|killed|killer|killing|murder|murdered|murderer|attack|attacked|attacker|assault|assaulted|blood|bloody|bleeding|war|warfare|battle|shoot|shooting|shot|stab|stabbed|stabbing|punch|punched|punching|beat|beaten|beating|abuse|abused|abusing|violent|violence|brutal|brutality|aggressive|aggression|combat|execute|executed|execution|slaughter|slaughtered|massacre|rampage|carnage|destruction|destroy|destroyed|injure|injured|injury|wound|wounded|harm|harmed|hurt|damage|damaged|smash|smashed|crush|crushed|choke|choked|strangle|strangled|suffocate|drown|drowned|brawl|riot|terrorism|terrorist|bomb|bombing|explode|explosion|grenade|missile|artillery|ammunition|gunfire|shootout|hostage|kidnap|kidnapped|torture|tortured|torment|maim|maimed|cripple|crippled)\b/i,
+    horror: /\b(horror|scary|scare|scared|terror|terrifying|terrified|creepy|creep|ghost|ghosts|ghostly|demon|demons|demonic|devil|satan|satanic|zombie|zombies|haunted|haunting|nightmare|nightmares|dead|death|die|dying|died|corpse|corpses|cadaver|skeleton|skull|skulls|monster|monsters|monstrous|mutant|mutants|vampire|vampires|werewolf|werewolves|witch|witches|evil|sinister|dark|darkness|curse|cursed|possessed|possession|exorcism|paranormal|supernatural|undead|graveyard|cemetery|coffin|tomb|crypt|morgue|mortuary|afterlife|hell|hellish|inferno|apocalypse|doomsday|occult|ritual|sacrifice|sacrificial|blood\s*ritual|black\s*magic|voodoo|seance|ouija|poltergeist|specter|apparition|phantasm|macabre|gruesome|grisly|morbid|eerie|ominous|foreboding|dread|dreadful|fright|frightening|frightened|petrified|spine-chilling|bone-chilling|bloodcurdling|scream|screaming|shriek)\b/i,
+    gore: /\b(gore|gory|dismember|dismembered|dismemberment|mutilat|mutilation|decapitat|decapitation|beheaded|beheading|torture|tortured|brutal|brutality|eviscerat|disembowel|intestine|intestines|guts|entrails|viscera|splatter|splattered|carnage|bloodbath|bloodshed|mangled|severed|amputat|amputation|flesh|flayed|skinned|impale|impaled|cannibalism|cannibal|decompos|decomposed|rotting|putrid|festering|maggot|maggots|autopsy|dissect|dissection|vivisection|organ|organs|brain|brains|eyeball|eyeballs)\b/i,
+    drugs: /\b(drug|drugs|cocaine|coke|heroin|smack|weed|marijuana|cannabis|pot|meth|methamphetamine|crystal\s*meth|amphetamine|ecstasy|mdma|molly|lsd|acid|shrooms|mushrooms|psilocybin|ketamine|pcp|crack|fentanyl|opioid|opiate|morphine|codeine|oxycodone|hydrocodone|xanax|valium|adderall|ritalin|prescription\s*drug|overdose|overdosed|od|inject|injecting|injection|needle|needles|syringe|snort|snorting|smoke|smoking|high|stoned|wasted|tripping|hallucinate|hallucination|dealer|dealing|cartel|trafficking|smuggl|contraband|narcotic|narcotics|dope|junkie|addict|addiction|rehab|withdrawal)\b/i,
+    weapons: /\b(gun|guns|gunman|rifle|rifles|pistol|pistols|revolver|shotgun|machine\s*gun|automatic|semi-automatic|assault\s*rifle|ar-15|ak-47|firearm|firearms|ammunition|ammo|bullet|bullets|cartridge|magazine|clip|holster|trigger|barrel|caliber|handgun|sniper|crossbow|bow\s*and\s*arrow|sword|swords|knife|knives|blade|blades|dagger|machete|axe|hatchet|weapon|weapons|weaponry|armed|arming|bomb|bombs|bomber|bombing|explosive|explosives|dynamite|c4|grenade|grenades|missile|missiles|rocket|launcher|mortar|artillery|tank|tanks|military|militia|arsenal|armory|munitions|warhead|nuclear|nuke|chemical\s*weapon|biological\s*weapon|anthrax|sarin|taser|pepper\s*spray|brass\s*knuckles|switchblade|bayonet|spear|mace|club|baton|nunchucks|throwing\s*star|shuriken)\b/i
   };
 
   for (const [category, pattern] of Object.entries(patterns)) {

@@ -1,6 +1,8 @@
 import Video from '../models/Video.js';
 import User from '../models/User.js';
+import Comment from '../models/Comment.js';
 import { processVideo } from '../services/videoProcessor.js';
+import { generateSignedUpload } from '../config/cloudinary.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,7 +10,73 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Upload video
+// Get upload signature for direct Cloudinary upload (bypasses Vercel's 4.5MB limit)
+export const getUploadSignature = async (req, res) => {
+  try {
+    const signatureData = generateSignedUpload('video', 'video-platform');
+    res.json(signatureData);
+  } catch (error) {
+    console.error('Signature generation error:', error);
+    res.status(500).json({ message: 'Error generating upload signature', error: error.message });
+  }
+};
+
+// Save video that was uploaded directly to Cloudinary
+export const saveCloudinaryVideo = async (req, res) => {
+  try {
+    const { 
+      title, 
+      description, 
+      cloudinaryUrl, 
+      publicId, 
+      filesize, 
+      duration,
+      format 
+    } = req.body;
+    
+    if (!title || !cloudinaryUrl || !publicId) {
+      return res.status(400).json({ 
+        message: 'Title, cloudinaryUrl, and publicId are required' 
+      });
+    }
+    
+    // Create video record from Cloudinary upload
+    const video = await Video.create({
+      title,
+      description: description || '',
+      filename: publicId,
+      filepath: cloudinaryUrl,
+      filesize: filesize || 0,
+      mimetype: format ? `video/${format}` : 'video/mp4',
+      duration: duration ? parseInt(duration) : 0,
+      user: req.user._id,
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
+    });
+    
+    // Start content moderation analysis in background
+    processVideo(video._id);
+    
+    res.status(201).json({
+      message: 'Video saved successfully',
+      video: {
+        id: video._id,
+        title: video.title,
+        description: video.description,
+        filename: video.filename,
+        filesize: video.filesize,
+        processingStatus: video.processingStatus,
+        sensitivityStatus: video.sensitivityStatus
+      }
+    });
+  } catch (error) {
+    console.error('Save Cloudinary video error:', error);
+    res.status(500).json({ message: 'Error saving video', error: error.message });
+  }
+};
+
+// Upload video (fallback for small files - Vercel has 4.5MB limit)
 export const uploadVideo = async (req, res) => {
   try {
     if (!req.file) {
@@ -85,8 +153,15 @@ export const getUserVideos = async (req, res) => {
       query.sensitivityStatus = status;
     }
     
-    const videos = await Video.find(query)
+    const videosDocs = await Video.find(query)
       .sort({ createdAt: -1 });
+    
+    // Add comment counts
+    const videos = await Promise.all(videosDocs.map(async (doc) => {
+      const video = doc.toObject();
+      video.commentsCount = await Comment.countDocuments({ video: video._id });
+      return video;
+    }));
     
     res.json({
       count: videos.length,

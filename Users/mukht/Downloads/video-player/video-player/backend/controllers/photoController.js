@@ -1,6 +1,7 @@
 import Photo from '../models/Photo.js';
 import User from '../models/User.js';
 import { processPhoto } from '../services/photoProcessor.js';
+import { generateSignedUpload } from '../config/cloudinary.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -8,7 +9,71 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Upload photo
+// Get upload signature for direct Cloudinary upload (bypasses Vercel's 4.5MB limit)
+export const getPhotoUploadSignature = async (req, res) => {
+  try {
+    const signatureData = generateSignedUpload('image', 'video-platform/photos');
+    res.json(signatureData);
+  } catch (error) {
+    console.error('Signature generation error:', error);
+    res.status(500).json({ message: 'Error generating upload signature', error: error.message });
+  }
+};
+
+// Save photo that was uploaded directly to Cloudinary
+export const saveCloudinaryPhoto = async (req, res) => {
+  try {
+    const { 
+      title, 
+      description, 
+      cloudinaryUrl, 
+      publicId, 
+      filesize,
+      format 
+    } = req.body;
+    
+    if (!title || !cloudinaryUrl || !publicId) {
+      return res.status(400).json({ 
+        message: 'Title, cloudinaryUrl, and publicId are required' 
+      });
+    }
+    
+    // Create photo record from Cloudinary upload
+    const photo = await Photo.create({
+      title,
+      description: description || '',
+      filename: publicId,
+      filepath: cloudinaryUrl,
+      filesize: filesize || 0,
+      mimetype: format ? `image/${format}` : 'image/jpeg',
+      user: req.user._id,
+      processingStatus: 'pending',
+      sensitivityStatus: 'pending',
+      contentRating: 'pending'
+    });
+    
+    // Start content moderation analysis in background
+    processPhoto(photo._id);
+    
+    res.status(201).json({
+      message: 'Photo saved successfully',
+      photo: {
+        id: photo._id,
+        title: photo.title,
+        description: photo.description,
+        filename: photo.filename,
+        filesize: photo.filesize,
+        processingStatus: photo.processingStatus,
+        sensitivityStatus: photo.sensitivityStatus
+      }
+    });
+  } catch (error) {
+    console.error('Save Cloudinary photo error:', error);
+    res.status(500).json({ message: 'Error saving photo', error: error.message });
+  }
+};
+
+// Upload photo (fallback for small files - Vercel has 4.5MB limit)
 export const uploadPhotoController = async (req, res) => {
   try {
     if (!req.file) {

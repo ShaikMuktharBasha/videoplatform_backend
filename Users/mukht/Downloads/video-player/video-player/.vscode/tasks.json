@@ -199,6 +199,98 @@
 				"$tsc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Deploy All",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"deploy_all.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Full Feature",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_full_feature.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Remove Frontend Lock",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"cleanup_lock.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Remove Frontend Lock Retry",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"cleanup_lock.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Push Full Feature Retry",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"push_full_feature.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Master Cleanup",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"final_cleanup.cjs"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Remove Final Script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"const fs = require('fs'); const path = require('path'); try { fs.unlinkSync(path.join('final_cleanup.cjs')); } catch(e) {}"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
 		}
 	]
 }
